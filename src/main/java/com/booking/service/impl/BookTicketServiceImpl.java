@@ -39,7 +39,6 @@ public class BookTicketServiceImpl implements BookTicketService {
                 .build());
     }
 
-    
     @Override
     public SeatEntity bookTicketForUser(PurchaseRequest request) {
 
@@ -63,6 +62,10 @@ public class BookTicketServiceImpl implements BookTicketService {
             tickets.add(ticket);
             List<SeatEntity> seatEntities = sectionForBooking.getSeats();
             Integer seatNumber = bookNextAvailableSeat(sectionForBooking);
+            if(request.getSeatId()>0 && sectionForBooking.getAvailableSeats()[request.getSeatId()]==0){
+                seatNumber = request.getSeatId();    
+            }
+           
             if (seatNumber != -1) {
                 seatEntity = SeatEntity.builder().seatNumber(seatNumber)
                         .ticketDetails(ticket)
@@ -103,7 +106,7 @@ public class BookTicketServiceImpl implements BookTicketService {
         SeatEntity seatEntity = getTicketDetails(ticketId);
         Section section = getSection(seatEntity.getTicketDetails().getSectionId());
         section.getSeats().remove(seatEntity);
-        section.getAvailableSeats()[seatEntity.getSeatNumber()-1] = 0;
+        section.getAvailableSeats()[seatEntity.getSeatNumber() - 1] = 0;
         return true;
     }
 
@@ -111,13 +114,30 @@ public class BookTicketServiceImpl implements BookTicketService {
     public SeatEntity modifySeatForUser(ModifySeatRequest modifySeatRequest) {
         SeatEntity seatEntity = getTicketDetails(modifySeatRequest.getTicketId());
         Section section = getSection(seatEntity.getTicketDetails().getSectionId());
-        Integer seatNumber = modifySeatRequest.getNewSeatId();
-        if (section.getAvailableSeats()[seatNumber] != 0) {
-            seatNumber = bookNextAvailableSeat(section);
+        if (section.getSectionId().equals(modifySeatRequest.getNewSection())) {
+            section.getSeats().remove(seatEntity);
+            seats.remove(seatEntity);
+            Integer seatNumber = modifySeatRequest.getNewSeatId();
+            if (section.getAvailableSeats()[seatNumber] != 0) {
+                seatNumber = bookNextAvailableSeat(section);
+            }
+            seatEntity.setSeatNumber(seatNumber);
+            if (!modifySeatRequest.getNewSection().isEmpty()) {
+                seatEntity.getTicketDetails().setSectionId(modifySeatRequest.getNewSection());
+            }
+            section.getAvailableSeats()[seatNumber] = 1;
+            section.getSeats().add(seatEntity);
+            seats.add(seatEntity);
+            return seatEntity;
+        } else {
+            section.getSeats().remove(seatEntity);
+            TicketEntity ticket = seatEntity.getTicketDetails();
+            return bookTicketForUser(
+                    PurchaseRequest.builder().from(ticket.getFrom()).to(ticket.getTo()).price(ticket.getPrice())
+                            .section(modifySeatRequest.getNewSection()).user(ticket.getUser())
+                            .seatId(modifySeatRequest.getNewSeatId())
+                            .build());
         }
-        seatEntity.setSeatNumber(seatNumber);
-        section.getAvailableSeats()[seatNumber] = 1;
-        return seatEntity;
     }
 
     public Section getSection(String section) {
@@ -153,5 +173,6 @@ public class BookTicketServiceImpl implements BookTicketService {
         // If no available seat is found
         return -1; // Or throw an exception indicating no available seats
     }
+
 
 }
