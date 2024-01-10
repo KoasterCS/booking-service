@@ -1,8 +1,6 @@
 package com.booking.controller;
 
 import java.util.List;
-import java.util.Map;
-
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.booking.entity.SeatEntity;
+import com.booking.model.ModifySeatRequest;
 import com.booking.model.PurchaseRequest;
 import com.booking.model.SectionUser;
 import com.booking.service.BookTicketService;
@@ -43,19 +42,17 @@ public class BookingController {
         return bookTicketService.getSectionUsers(sectionId);
     }
 
-    @DeleteMapping("/remove/{email}")
-    public String removeUser(@PathVariable String email) {
-        String section = userSeats.remove(email);
-        return "User removed from section " + section;
+    @DeleteMapping("/remove/{ticketId}")
+    public String removeUser(@PathVariable String ticketId) {
+        Boolean isRemovalSuccessfull = bookTicketService.deleteUser(ticketId);
+        if (Boolean.TRUE.equals(isRemovalSuccessfull))
+            return "User removed from section ";
+        else
+            return "Failed to remove user";
     }
 
-    @PutMapping("/modifySeat/{email}/{newSection}")
-    public String modifySeat(@PathVariable String email, @PathVariable String newSection) {
-        if (userSeats.containsKey(email)) {
-            userSeats.put(email, newSection);
-            return "Seat modified successfully for user " + email;
-        } else {
-            return "User not found";
-        }
+    @PutMapping("/modifySeat")
+    public SeatEntity modifySeat(@RequestBody ModifySeatRequest request) {
+        return bookTicketService.modifySeatForUser(request);
     }
 }

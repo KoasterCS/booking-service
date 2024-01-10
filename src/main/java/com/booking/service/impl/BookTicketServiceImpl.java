@@ -14,6 +14,7 @@ import org.springframework.util.ObjectUtils;
 
 import com.booking.entity.SeatEntity;
 import com.booking.entity.TicketEntity;
+import com.booking.model.ModifySeatRequest;
 import com.booking.model.PurchaseRequest;
 import com.booking.model.Section;
 import com.booking.model.SectionUser;
@@ -28,13 +29,95 @@ public class BookTicketServiceImpl implements BookTicketService {
     private final List<TicketEntity> tickets = new ArrayList<>();
     private final List<SeatEntity> seats = new ArrayList<>();
     private final List<Section> sections = Collections.synchronizedList(new ArrayList<>());
+    public static final Integer MAX_SEATS = 60;
 
     BookTicketServiceImpl() {
+        // Initializing some in-memory values in place of database
+        sections.add(Section.builder().sectionId("A").availableSeats(new int[MAX_SEATS]).seats(new ArrayList<>())
+                .build());
+        sections.add(Section.builder().sectionId("B").availableSeats(new int[MAX_SEATS]).seats(new ArrayList<>())
+                .build());
+    }
 
-        sections.add(Section.builder().sectionId("A").nextSeatToBeBooked(1).availableSeats(60).seats(new ArrayList<>())
-                .build());
-        sections.add(Section.builder().sectionId("B").nextSeatToBeBooked(1).availableSeats(60).seats(new ArrayList<>())
-                .build());
+    
+    @Override
+    public SeatEntity bookTicketForUser(PurchaseRequest request) {
+
+        Section sectionForBooking = getSection(request.getSection());
+        SeatEntity seatEntity = null;
+
+        if (ObjectUtils.isEmpty(sectionForBooking)) {
+            log.error("Section is empty");
+            return null;
+        }
+
+        synchronized (this) {
+            String ticketId = UUID.randomUUID().toString();
+            TicketEntity ticket = TicketEntity.builder().from(request.getFrom())
+                    .to(request.getTo())
+                    .user(request.getUser())
+                    .price(request.getPrice())
+                    .ticketId(ticketId)
+                    .sectionId(request.getSection())
+                    .build();
+            tickets.add(ticket);
+            List<SeatEntity> seatEntities = sectionForBooking.getSeats();
+            Integer seatNumber = bookNextAvailableSeat(sectionForBooking);
+            if (seatNumber != -1) {
+                seatEntity = SeatEntity.builder().seatNumber(seatNumber)
+                        .ticketDetails(ticket)
+                        .isBooked(true)
+                        .build();
+
+                seatEntities.add(seatEntity);
+                seats.add(seatEntity);
+                return seatEntity;
+            }
+
+        }
+
+        return seatEntity;
+    }
+
+    @Override
+    public SeatEntity getTicketDetails(String ticketId) {
+        return seats.stream().filter(seatFilter -> ticketId.equals(seatFilter.getTicketDetails().getTicketId()))
+                .findAny()
+                .orElse(null);
+    }
+
+    @Override
+    public List<SectionUser> getSectionUsers(String sectionId) {
+        Section section = getSection(sectionId);
+        return section.getSeats().stream()
+                .map(seatEntity -> SectionUser.builder()
+                        .seatNumber(seatEntity.getSeatNumber())
+                        .user(seatEntity.getTicketDetails().getUser())
+                        .ticketId(seatEntity.getTicketDetails().getTicketId())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Boolean deleteUser(String ticketId) {
+        SeatEntity seatEntity = getTicketDetails(ticketId);
+        Section section = getSection(seatEntity.getTicketDetails().getSectionId());
+        section.getSeats().remove(seatEntity);
+        section.getAvailableSeats()[seatEntity.getSeatNumber()-1] = 0;
+        return true;
+    }
+
+    @Override
+    public SeatEntity modifySeatForUser(ModifySeatRequest modifySeatRequest) {
+        SeatEntity seatEntity = getTicketDetails(modifySeatRequest.getTicketId());
+        Section section = getSection(seatEntity.getTicketDetails().getSectionId());
+        Integer seatNumber = modifySeatRequest.getNewSeatId();
+        if (section.getAvailableSeats()[seatNumber] != 0) {
+            seatNumber = bookNextAvailableSeat(section);
+        }
+        seatEntity.setSeatNumber(seatNumber);
+        section.getAvailableSeats()[seatNumber] = 1;
+        return seatEntity;
     }
 
     public Section getSection(String section) {
@@ -57,60 +140,18 @@ public class BookTicketServiceImpl implements BookTicketService {
                 .orElse(null);
     }
 
-    @Override
-    public SeatEntity bookTicketForUser(PurchaseRequest request) {
+    public int bookNextAvailableSeat(Section sectionForBooking) {
+        int[] bookedSeats = sectionForBooking.getAvailableSeats();
 
-        Section sectionForBooking = getSection(request.getSection());
-        SeatEntity seatEntity = null;
-
-        if (ObjectUtils.isEmpty(sectionForBooking)) {
-            log.error("Section is empty");
-            return null;
-        }
-
-        synchronized (this) {
-            String ticketId = UUID.randomUUID().toString();
-            TicketEntity ticket = TicketEntity.builder().from(request.getFrom())
-                    .to(request.getTo())
-                    .user(request.getUser())
-                    .price(request.getPrice())
-                    .ticketId(ticketId)
-                    .sectionId(request.getSection())
-                    .build();
-            tickets.add(ticket);
-            if (sectionForBooking.getAvailableSeats() != 0) {
-                List<SeatEntity> seatEntities = sectionForBooking.getSeats();
-                seatEntity = SeatEntity.builder().seatNumber(sectionForBooking.getNextSeatToBeBooked())
-                        .ticketDetails(ticket).build();
-                seatEntities.add(seatEntity);
-                sectionForBooking.setAvailableSeats(sectionForBooking.getAvailableSeats() - 1);
-                sectionForBooking.setNextSeatToBeBooked(sectionForBooking.getNextSeatToBeBooked() + 1);
-                seats.add(seatEntity);
-                return seatEntity;
+        for (int i = 0; i < MAX_SEATS; i++) {
+            if (bookedSeats[i] == 0) { // If seat is not booked (0 indicates available)
+                bookedSeats[i] = 1; // Mark the seat as booked (1 indicates booked)
+                return i + 1; // Seat numbers are assumed to start from 1
             }
         }
 
-        return seatEntity;
-    }
-
-    @Override
-    public SeatEntity getTicketDetails(String ticketId) {
-        return seats.stream().filter(seatFilter -> ticketId.equals(seatFilter.getTicketDetails().getTicketId()))
-                .findAny()
-                .orElse(null);
-    }
-
-    @Override
-    public List<SectionUser> getSectionUsers(String sectionId) {
-        List<SectionUser> sectionUsers = new ArrayList<>();
-        Section section = getSection(sectionId);
-        sectionUsers = section.getSeats().stream()
-                .map(seatEntity -> SectionUser.builder()
-                        .sectionId(sectionId)
-                        .user(seatEntity.getTicketDetails().getUser())
-                        .build())
-                .collect(Collectors.toList());
-        return sectionUsers;
+        // If no available seat is found
+        return -1; // Or throw an exception indicating no available seats
     }
 
 }

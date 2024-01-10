@@ -7,5 +7,6 @@ import lombok.Data;
 @Builder
 public class SeatEntity {
     private Integer seatNumber;
+    private Boolean isBooked;
     private TicketEntity ticketDetails;
 }

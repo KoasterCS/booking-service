@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 @Builder
 public class SectionUser {
-    private String sectionId;
+    private Integer seatNumber;
+    private String ticketId;
     private User user;
 }

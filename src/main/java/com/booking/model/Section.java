@@ -10,7 +10,6 @@ import lombok.Data;
 @Builder
 public class Section {
     private String sectionId;
-    private Integer availableSeats;
-    private Integer nextSeatToBeBooked;
+    private int[] availableSeats;
     private List<SeatEntity> seats;
 }
