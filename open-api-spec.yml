@@ -1,0 +1,251 @@
+{
+  "openapi": "3.0.1",
+  "info": { "title": "OpenAPI definition", "version": "v0" },
+  "servers":
+    [{ "url": "http://localhost:8080", "description": "Generated server url" }],
+  "paths":
+    {
+      "/api/tickets/modifySeat":
+        {
+          "put":
+            {
+              "tags": ["booking-controller"],
+              "operationId": "modifySeat",
+              "requestBody":
+                {
+                  "content":
+                    {
+                      "application/json":
+                        {
+                          "schema":
+                            {
+                              "$ref": "#/components/schemas/ModifySeatRequest",
+                            },
+                        },
+                    },
+                  "required": true,
+                },
+              "responses":
+                {
+                  "200":
+                    {
+                      "description": "OK",
+                      "content":
+                        {
+                          "*/*":
+                            {
+                              "schema":
+                                { "$ref": "#/components/schemas/SeatEntity" },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      "/api/tickets/purchase":
+        {
+          "post":
+            {
+              "tags": ["booking-controller"],
+              "operationId": "purchaseTicket",
+              "requestBody":
+                {
+                  "content":
+                    {
+                      "application/json":
+                        {
+                          "schema":
+                            { "$ref": "#/components/schemas/PurchaseRequest" },
+                        },
+                    },
+                  "required": true,
+                },
+              "responses":
+                {
+                  "200":
+                    {
+                      "description": "OK",
+                      "content":
+                        {
+                          "*/*":
+                            {
+                              "schema":
+                                { "$ref": "#/components/schemas/SeatEntity" },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      "/api/tickets/users/{sectionId}":
+        {
+          "get":
+            {
+              "tags": ["booking-controller"],
+              "operationId": "getUserSeats",
+              "parameters":
+                [
+                  {
+                    "name": "sectionId",
+                    "in": "path",
+                    "required": true,
+                    "schema": { "type": "string" },
+                  },
+                ],
+              "responses":
+                {
+                  "200":
+                    {
+                      "description": "OK",
+                      "content":
+                        {
+                          "*/*":
+                            {
+                              "schema":
+                                {
+                                  "type": "array",
+                                  "items":
+                                    {
+                                      "$ref": "#/components/schemas/SectionUser",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      "/api/tickets/receipt/{ticketId}":
+        {
+          "get":
+            {
+              "tags": ["booking-controller"],
+              "operationId": "getReceipt",
+              "parameters":
+                [
+                  {
+                    "name": "ticketId",
+                    "in": "path",
+                    "required": true,
+                    "schema": { "type": "string" },
+                  },
+                ],
+              "responses":
+                {
+                  "200":
+                    {
+                      "description": "OK",
+                      "content":
+                        {
+                          "*/*":
+                            {
+                              "schema":
+                                { "$ref": "#/components/schemas/SeatEntity" },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      "/api/tickets/remove/{ticketId}":
+        {
+          "delete":
+            {
+              "tags": ["booking-controller"],
+              "operationId": "removeUser",
+              "parameters":
+                [
+                  {
+                    "name": "ticketId",
+                    "in": "path",
+                    "required": true,
+                    "schema": { "type": "string" },
+                  },
+                ],
+              "responses":
+                {
+                  "200":
+                    {
+                      "description": "OK",
+                      "content": { "*/*": { "schema": { "type": "string" } } },
+                    },
+                },
+            },
+        },
+    },
+  "components":
+    {
+      "schemas":
+        {
+          "ModifySeatRequest":
+            {
+              "type": "object",
+              "properties":
+                {
+                  "newSection": { "type": "string" },
+                  "newSeatId": { "type": "integer", "format": "int32" },
+                  "ticketId": { "type": "string" },
+                },
+            },
+          "SeatEntity":
+            {
+              "type": "object",
+              "properties":
+                {
+                  "seatNumber": { "type": "integer", "format": "int32" },
+                  "isBooked": { "type": "boolean" },
+                  "ticketDetails":
+                    { "$ref": "#/components/schemas/TicketEntity" },
+                },
+            },
+          "TicketEntity":
+            {
+              "type": "object",
+              "properties":
+                {
+                  "from": { "type": "string" },
+                  "to": { "type": "string" },
+                  "user": { "$ref": "#/components/schemas/User" },
+                  "price": { "type": "number", "format": "double" },
+                  "ticketId": { "type": "string" },
+                  "sectionId": { "type": "string" },
+                },
+            },
+          "User":
+            {
+              "required": ["email", "firstName", "lastName"],
+              "type": "object",
+              "properties":
+                {
+                  "firstName": { "type": "string" },
+                  "lastName": { "type": "string" },
+                  "email": { "type": "string" },
+                },
+            },
+          "PurchaseRequest":
+            {
+              "required": ["from", "section", "to"],
+              "type": "object",
+              "properties":
+                {
+                  "from": { "type": "string" },
+                  "to": { "type": "string" },
+                  "section": { "type": "string" },
+                  "seatId": { "type": "integer", "format": "int32" },
+                  "user": { "$ref": "#/components/schemas/User" },
+                  "price": { "type": "number", "format": "double" },
+                },
+            },
+          "SectionUser":
+            {
+              "type": "object",
+              "properties":
+                {
+                  "seatNumber": { "type": "integer", "format": "int32" },
+                  "ticketId": { "type": "string" },
+                  "user": { "$ref": "#/components/schemas/User" },
+                },
+            },
+        },
+    },
+}
