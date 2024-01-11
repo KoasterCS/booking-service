@@ -31,7 +31,7 @@ public class BookTicketServiceImpl implements BookTicketService {
     private final List<Section> sections = Collections.synchronizedList(new ArrayList<>());
     public static final Integer MAX_SEATS = 60;
 
-    BookTicketServiceImpl() {
+    public BookTicketServiceImpl() {
         // Initializing some in-memory values in place of database
         sections.add(Section.builder().sectionId("A").availableSeats(new int[MAX_SEATS]).seats(new ArrayList<>())
                 .build());
@@ -140,27 +140,14 @@ public class BookTicketServiceImpl implements BookTicketService {
         }
     }
 
-    public Section getSection(String section) {
+    private Section getSection(String section) {
         // Would call database here but for now maintaining in-memory
         return sections.stream().filter(sectionFilter -> section.equals(sectionFilter.getSectionId()))
                 .findAny()
                 .orElse(null);
     }
 
-    public SeatEntity getSeatEntity(TicketEntity ticket) {
-        return seats.stream().filter(seatFilter -> ticket.equals(seatFilter.getTicketDetails()))
-                .findAny()
-                .orElse(null);
-    }
-
-    public TicketEntity getTicket(String ticket) {
-        // Would call database here but for now maintaining in-memory
-        return tickets.stream().filter(ticketFilter -> ticket.equals(ticketFilter.getSectionId()))
-                .findAny()
-                .orElse(null);
-    }
-
-    public int bookNextAvailableSeat(Section sectionForBooking) {
+    private int bookNextAvailableSeat(Section sectionForBooking) {
         int[] bookedSeats = sectionForBooking.getAvailableSeats();
 
         for (int i = 0; i < MAX_SEATS; i++) {
