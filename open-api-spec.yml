@@ -35,7 +35,9 @@
                           "*/*":
                             {
                               "schema":
-                                { "$ref": "#/components/schemas/SeatEntity" },
+                                {
+                                  "$ref": "#/components/schemas/ResponseSeatEntity",
+                                },
                             },
                         },
                     },
@@ -70,7 +72,9 @@
                           "*/*":
                             {
                               "schema":
-                                { "$ref": "#/components/schemas/SeatEntity" },
+                                {
+                                  "$ref": "#/components/schemas/ResponseSeatEntity",
+                                },
                             },
                         },
                     },
@@ -103,11 +107,7 @@
                             {
                               "schema":
                                 {
-                                  "type": "array",
-                                  "items":
-                                    {
-                                      "$ref": "#/components/schemas/SectionUser",
-                                    },
+                                  "$ref": "#/components/schemas/ResponseListSectionUser",
                                 },
                             },
                         },
@@ -140,7 +140,9 @@
                           "*/*":
                             {
                               "schema":
-                                { "$ref": "#/components/schemas/SeatEntity" },
+                                {
+                                  "$ref": "#/components/schemas/ResponseSeatEntity",
+                                },
                             },
                         },
                     },
@@ -185,6 +187,17 @@
                   "newSection": { "type": "string" },
                   "newSeatId": { "type": "integer", "format": "int32" },
                   "ticketId": { "type": "string" },
+                },
+            },
+          "ResponseSeatEntity":
+            {
+              "type": "object",
+              "properties":
+                {
+                  "data": { "$ref": "#/components/schemas/SeatEntity" },
+                  "messages":
+                    { "type": "array", "items": { "type": "string" } },
+                  "isSuccess": { "type": "boolean" },
                 },
             },
           "SeatEntity":
@@ -234,6 +247,21 @@
                   "seatId": { "type": "integer", "format": "int32" },
                   "user": { "$ref": "#/components/schemas/User" },
                   "price": { "type": "number", "format": "double" },
+                },
+            },
+          "ResponseListSectionUser":
+            {
+              "type": "object",
+              "properties":
+                {
+                  "data":
+                    {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/SectionUser" },
+                    },
+                  "messages":
+                    { "type": "array", "items": { "type": "string" } },
+                  "isSuccess": { "type": "boolean" },
                 },
             },
           "SectionUser":

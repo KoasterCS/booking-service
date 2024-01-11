@@ -61,6 +61,8 @@ public class BookTicketServiceImpl implements BookTicketService {
                     .build();
             tickets.add(ticket);
             List<SeatEntity> seatEntities = sectionForBooking.getSeats();
+
+            //checking if a seat number was requested else booking the next available seat
             Integer seatNumber = bookNextAvailableSeat(sectionForBooking);
             if(request.getSeatId()>0 && sectionForBooking.getAvailableSeats()[request.getSeatId()]==0){
                 seatNumber = request.getSeatId();    
@@ -114,6 +116,8 @@ public class BookTicketServiceImpl implements BookTicketService {
     public SeatEntity modifySeatForUser(ModifySeatRequest modifySeatRequest) {
         SeatEntity seatEntity = getTicketDetails(modifySeatRequest.getTicketId());
         Section section = getSection(seatEntity.getTicketDetails().getSectionId());
+      
+        //Depending on section logic changes
         if (section.getSectionId().equals(modifySeatRequest.getNewSection())) {
             section.getSeats().remove(seatEntity);
             seats.remove(seatEntity);

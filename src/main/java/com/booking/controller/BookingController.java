@@ -1,6 +1,10 @@
 package com.booking.controller;
 
 import java.util.List;
+
+import static com.booking.util.ResponseBuilder.getErrorResponse;
+import static com.booking.util.ResponseBuilder.getSuccessResponse;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.booking.entity.SeatEntity;
 import com.booking.model.ModifySeatRequest;
 import com.booking.model.PurchaseRequest;
+import com.booking.model.Response;
 import com.booking.model.SectionUser;
 import com.booking.service.BookTicketService;
 
@@ -27,32 +32,81 @@ public class BookingController {
 
     private final BookTicketService bookTicketService;
 
+    /**
+     * @description Purchase request for Seat
+     * @param request
+     * @return
+     */
     @PostMapping("/purchase")
-    public SeatEntity purchaseTicket(@RequestBody PurchaseRequest request) {
-        return bookTicketService.bookTicketForUser(request);
+    public Response<SeatEntity> purchaseTicket(@RequestBody PurchaseRequest request) {
+        SeatEntity seatEntity = bookTicketService.bookTicketForUser(request);
+        if(!ObjectUtils.isEmpty(seatEntity)){
+            return getSuccessResponse(seatEntity,"Purchased ticket Successfully");
+        }
+        else{
+            return getErrorResponse("There was an error processing your request, Please try again later");
+        }
     }
 
+    /**
+     * @description Get receipt based on ticket id
+     * @param ticketId
+     * @return
+     */
     @GetMapping("/receipt/{ticketId}")
-    public SeatEntity getReceipt(@PathVariable String ticketId) {
-        return bookTicketService.getTicketDetails(ticketId);
+    public Response<SeatEntity> getReceipt(@PathVariable String ticketId) {
+        SeatEntity seatEntity = bookTicketService.getTicketDetails(ticketId);
+         if(!ObjectUtils.isEmpty(seatEntity)){
+            return getSuccessResponse(seatEntity,"Fetched ticket details Successfully");
+        }
+        else{
+            return getErrorResponse("There was an error processing your request, Please try again later");
+        }
     }
 
+    /**
+     * @description Get all users in a section
+     * @param sectionId
+     * @return
+     */
     @GetMapping("/users/{sectionId}")
-    public List<SectionUser> getUserSeats(@PathVariable String sectionId) {
-        return bookTicketService.getSectionUsers(sectionId);
+    public Response<List<SectionUser>> getUserSeats(@PathVariable String sectionId) {
+        List<SectionUser> sectionUser = bookTicketService.getSectionUsers(sectionId);
+        if(!ObjectUtils.isEmpty(sectionUser)){
+            return getSuccessResponse(sectionUser,"Fetched users by section Successfully");
+        }
+        else{
+            return getSuccessResponse("No Users were present in the requested section0");
+        }
     }
 
+    /**
+     * @description Remove user based on ticketID
+     * @param ticketId
+     * @return
+     */
     @DeleteMapping("/remove/{ticketId}")
-    public String removeUser(@PathVariable String ticketId) {
+    public Response<String> removeUser(@PathVariable String ticketId) {
         Boolean isRemovalSuccessfull = bookTicketService.deleteUser(ticketId);
         if (Boolean.TRUE.equals(isRemovalSuccessfull))
-            return "User removed from section ";
+            return getSuccessResponse(null, "Removed ticket sucessfully");
         else
-            return "Failed to remove user";
+            return getErrorResponse("Failed to remove user, please try again later");
     }
 
+    /**
+     * @description Modify seat in the same or another section
+     * @param request
+     * @return
+     */
     @PutMapping("/modifySeat")
-    public SeatEntity modifySeat(@RequestBody ModifySeatRequest request) {
-        return bookTicketService.modifySeatForUser(request);
+    public Response<SeatEntity> modifySeat(@RequestBody ModifySeatRequest request) {
+        SeatEntity seatEntity = bookTicketService.modifySeatForUser(request);
+        if(!ObjectUtils.isEmpty(seatEntity)){
+            return getSuccessResponse(seatEntity,"Modified ticket details Successfully");
+        }
+        else{
+            return getErrorResponse("There was an error modifying request details, Please try again later");
+        }
     }
 }
