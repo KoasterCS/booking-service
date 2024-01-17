@@ -50,8 +50,24 @@ public class BookTicketServiceImpl implements BookTicketService {
             return null;
         }
 
+        if (!request.getSection().equals("A") && !request.getSection().equals("B")) {
+            log.error("Section must be A or B");
+            return null;
+        }
+
+        if (request.getSeatId() <= 0 || request.getSeatId() > 59) {
+            log.error("Invalid seat number");
+            return null;
+        }
+
+        if(request.getPrice()<0){
+            log.error("Price cannot be negative");
+            return null;
+        }
+
         synchronized (this) {
-            String ticketId = UUID.randomUUID().toString();
+            String ticketId = ObjectUtils.isEmpty(request.getTicketId()) ? UUID.randomUUID().toString()
+                    : request.getTicketId();
             TicketEntity ticket = TicketEntity.builder().from(request.getFrom())
                     .to(request.getTo())
                     .user(request.getUser())
@@ -62,12 +78,12 @@ public class BookTicketServiceImpl implements BookTicketService {
             tickets.add(ticket);
             List<SeatEntity> seatEntities = sectionForBooking.getSeats();
 
-            //checking if a seat number was requested else booking the next available seat
+            // checking if a seat number was requested else booking the next available seat
             Integer seatNumber = bookNextAvailableSeat(sectionForBooking);
-            if(request.getSeatId()>0 && sectionForBooking.getAvailableSeats()[request.getSeatId()]==0){
-                seatNumber = request.getSeatId();    
+            if (request.getSeatId() > 0 && sectionForBooking.getAvailableSeats()[request.getSeatId()] == 0) {
+                seatNumber = request.getSeatId();
             }
-           
+
             if (seatNumber != -1) {
                 seatEntity = SeatEntity.builder().seatNumber(seatNumber)
                         .ticketDetails(ticket)
@@ -106,18 +122,22 @@ public class BookTicketServiceImpl implements BookTicketService {
     @Override
     public Boolean deleteUser(String ticketId) {
         SeatEntity seatEntity = getTicketDetails(ticketId);
-        Section section = getSection(seatEntity.getTicketDetails().getSectionId());
-        section.getSeats().remove(seatEntity);
-        section.getAvailableSeats()[seatEntity.getSeatNumber() - 1] = 0;
-        return true;
+        if (!ObjectUtils.isEmpty(seatEntity)) {
+            Section section = getSection(seatEntity.getTicketDetails().getSectionId());
+            section.getSeats().remove(seatEntity);
+            seats.remove(seatEntity);
+            section.getAvailableSeats()[seatEntity.getSeatNumber() - 1] = 0;
+            return true;
+        }
+        return null;
     }
 
     @Override
     public SeatEntity modifySeatForUser(ModifySeatRequest modifySeatRequest) {
         SeatEntity seatEntity = getTicketDetails(modifySeatRequest.getTicketId());
         Section section = getSection(seatEntity.getTicketDetails().getSectionId());
-      
-        //Depending on section logic changes
+
+        // Depending on section logic changes
         if (section.getSectionId().equals(modifySeatRequest.getNewSection())) {
             section.getSeats().remove(seatEntity);
             seats.remove(seatEntity);
@@ -135,11 +155,13 @@ public class BookTicketServiceImpl implements BookTicketService {
             return seatEntity;
         } else {
             section.getSeats().remove(seatEntity);
+            seats.remove(seatEntity);
             TicketEntity ticket = seatEntity.getTicketDetails();
             return bookTicketForUser(
                     PurchaseRequest.builder().from(ticket.getFrom()).to(ticket.getTo()).price(ticket.getPrice())
                             .section(modifySeatRequest.getNewSection()).user(ticket.getUser())
                             .seatId(modifySeatRequest.getNewSeatId())
+                            .ticketId(modifySeatRequest.getTicketId())
                             .build());
         }
     }
@@ -164,6 +186,5 @@ public class BookTicketServiceImpl implements BookTicketService {
         // If no available seat is found
         return -1; // Or throw an exception indicating no available seats
     }
-
 
 }

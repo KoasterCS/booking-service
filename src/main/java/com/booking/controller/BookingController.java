@@ -4,6 +4,9 @@ import java.util.List;
 
 import static com.booking.util.ResponseBuilder.getErrorResponse;
 import static com.booking.util.ResponseBuilder.getSuccessResponse;
+import static com.booking.util.ResponseBuilder.getBadRequestResponse;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -38,14 +41,16 @@ public class BookingController {
      * @return
      */
     @PostMapping("/purchase")
-    public Response<SeatEntity> purchaseTicket(@RequestBody PurchaseRequest request) {
+    public ResponseEntity<Response<SeatEntity>> purchaseTicket(@RequestBody PurchaseRequest request) {
+        Response<SeatEntity> response = null;
         SeatEntity seatEntity = bookTicketService.bookTicketForUser(request);
-        if(!ObjectUtils.isEmpty(seatEntity)){
-            return getSuccessResponse(seatEntity,"Purchased ticket Successfully");
+        if (!ObjectUtils.isEmpty(seatEntity)) {
+            response = getSuccessResponse(seatEntity, "Purchased ticket Successfully");
+        } else {
+            response = getErrorResponse("There was an error processing your request, Please try again later");
         }
-        else{
-            return getErrorResponse("There was an error processing your request, Please try again later");
-        }
+
+        return new ResponseEntity<>(response, response.getStatus());
     }
 
     /**
@@ -54,14 +59,15 @@ public class BookingController {
      * @return
      */
     @GetMapping("/receipt/{ticketId}")
-    public Response<SeatEntity> getReceipt(@PathVariable String ticketId) {
+    public ResponseEntity<Response<SeatEntity>> getReceipt(@PathVariable String ticketId) {
+        Response<SeatEntity> response = null;
         SeatEntity seatEntity = bookTicketService.getTicketDetails(ticketId);
-         if(!ObjectUtils.isEmpty(seatEntity)){
-            return getSuccessResponse(seatEntity,"Fetched ticket details Successfully");
+        if (!ObjectUtils.isEmpty(seatEntity)) {
+            response = getSuccessResponse(seatEntity, "Fetched ticket details Successfully");
+        } else {
+            response = getSuccessResponse("There was no such ticket found");
         }
-        else{
-            return getErrorResponse("There was an error processing your request, Please try again later");
-        }
+        return new ResponseEntity<>(response, response.getStatus());
     }
 
     /**
@@ -70,14 +76,15 @@ public class BookingController {
      * @return
      */
     @GetMapping("/users/{sectionId}")
-    public Response<List<SectionUser>> getUserSeats(@PathVariable String sectionId) {
+    public ResponseEntity<Response<List<SectionUser>>> getUserSeats(@PathVariable String sectionId) {
+        Response<List<SectionUser>> response = null;
         List<SectionUser> sectionUser = bookTicketService.getSectionUsers(sectionId);
-        if(!ObjectUtils.isEmpty(sectionUser)){
-            return getSuccessResponse(sectionUser,"Fetched users by section Successfully");
+        if (!ObjectUtils.isEmpty(sectionUser)) {
+            response = getSuccessResponse(sectionUser, "Fetched users by section Successfully");
+        } else {
+            response = getSuccessResponse("No Users were present in the requested section");
         }
-        else{
-            return getSuccessResponse("No Users were present in the requested section0");
-        }
+        return new ResponseEntity<>(response, response.getStatus());
     }
 
     /**
@@ -86,12 +93,14 @@ public class BookingController {
      * @return
      */
     @DeleteMapping("/remove/{ticketId}")
-    public Response<String> removeUser(@PathVariable String ticketId) {
+    public ResponseEntity<Response<String>> removeUser(@PathVariable String ticketId) {
+        Response<String> response = null;
         Boolean isRemovalSuccessfull = bookTicketService.deleteUser(ticketId);
         if (Boolean.TRUE.equals(isRemovalSuccessfull))
-            return getSuccessResponse(null, "Removed ticket sucessfully");
+            response = getSuccessResponse(null, "Removed ticket sucessfully");
         else
-            return getErrorResponse("Failed to remove user, please try again later");
+            response = getErrorResponse("Failed to remove user, please try again later");
+        return new ResponseEntity<>(response, response.getStatus());
     }
 
     /**
@@ -100,13 +109,14 @@ public class BookingController {
      * @return
      */
     @PutMapping("/modifySeat")
-    public Response<SeatEntity> modifySeat(@RequestBody ModifySeatRequest request) {
+    public ResponseEntity<Response<SeatEntity>> modifySeat(@RequestBody ModifySeatRequest request) {
+        Response<SeatEntity> response = null;
         SeatEntity seatEntity = bookTicketService.modifySeatForUser(request);
-        if(!ObjectUtils.isEmpty(seatEntity)){
-            return getSuccessResponse(seatEntity,"Modified ticket details Successfully");
+        if (!ObjectUtils.isEmpty(seatEntity)) {
+            response = getSuccessResponse(seatEntity, "Modified ticket details Successfully");
+        } else {
+            response = getErrorResponse("There was an error modifying request details, Please try again later");
         }
-        else{
-            return getErrorResponse("There was an error modifying request details, Please try again later");
-        }
+        return new ResponseEntity<>(response, response.getStatus());
     }
 }
